@@ -60,7 +60,7 @@ impl Searchable for Google {
 
         res.sort_by(|a, b| a.title().cmp(b.title()));
         res.dedup_by(|a, b| a.title() == b.title());
-        if self.config.get("Return Query").and_then(|e| e.as_bool()).unwrap_or(true) {
+        if self.config.get("Always return query even if no results found").and_then(|e| e.as_bool()).unwrap_or(true) {
             res.retain(|r| r.title() != query);
             res.insert(0, SearchResult::new(&query));
         }
@@ -113,6 +113,6 @@ impl Searchable for Google {
 
 fn default_config() -> quick_search_lib::Config {
     let mut config = quick_search_lib::Config::new();
-    config.insert("Return Query".into(), quick_search_lib::EntryType::Bool { value: true });
+    config.insert("Always return query even if no results found".into(), quick_search_lib::EntryType::Bool { value: true });
     config
 }
