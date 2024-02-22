@@ -24,6 +24,7 @@ fn get_searchable(id: PluginId) -> Searchable_TO<'static, RBox<()>> {
 struct Google {
     id: PluginId,
     client: reqwest::blocking::Client,
+    config: quick_search_lib::Config,
 }
 
 impl Google {
@@ -31,6 +32,7 @@ impl Google {
         Self {
             id,
             client: reqwest::blocking::Client::new(),
+            config: default_config(),
         }
     }
 }
@@ -58,8 +60,10 @@ impl Searchable for Google {
 
         res.sort_by(|a, b| a.title().cmp(b.title()));
         res.dedup_by(|a, b| a.title() == b.title());
-        res.retain(|r| r.title() != query);
-        res.insert(0, SearchResult::new(&query));
+        if self.config.get("Return Query").and_then(|e| e.as_bool()).unwrap_or(true) {
+            res.retain(|r| r.title() != query);
+            res.insert(0, SearchResult::new(&query));
+        }
 
         res.into()
     }
@@ -96,7 +100,19 @@ impl Searchable for Google {
             log::error!("failed to open browser: {}", e);
         }
     }
-    fn plugin_id(&self) -> &PluginId {
-        &self.id
+    fn plugin_id(&self) -> PluginId {
+        self.id.clone()
     }
+    fn get_config_entries(&self) -> quick_search_lib::Config {
+        default_config()
+    }
+    fn lazy_load_config(&mut self, config: quick_search_lib::Config) {
+        self.config = config;
+    }
+}
+
+fn default_config() -> quick_search_lib::Config {
+    let mut config = quick_search_lib::Config::new();
+    config.insert("Return Query".into(), quick_search_lib::EntryType::Bool { value: true });
+    config
 }
