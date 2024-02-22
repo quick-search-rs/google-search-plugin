@@ -33,9 +33,6 @@ impl Google {
             client: reqwest::blocking::Client::new(),
         }
     }
-    fn get_individual_query(&self, query: String) -> SearchResult {
-        SearchResult::new(&query)
-    }
 }
 
 impl Searchable for Google {
@@ -51,7 +48,7 @@ impl Searchable for Google {
                         if node.tag_name().name() == "suggestion" {
                             if let Some(data) = node.attribute("data") {
                                 let data = data.to_string();
-                                res.push(self.get_individual_query(data));
+                                res.push(SearchResult::new(&data));
                             }
                         }
                     }
@@ -61,6 +58,8 @@ impl Searchable for Google {
 
         res.sort_by(|a, b| a.title().cmp(b.title()));
         res.dedup_by(|a, b| a.title() == b.title());
+        res.retain(|r| r.title() != query);
+        res.insert(0, SearchResult::new(&query));
 
         res.into()
     }
